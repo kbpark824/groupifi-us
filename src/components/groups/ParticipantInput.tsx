@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 interface ParticipantInputProps {
   participants: string[];
@@ -48,8 +48,11 @@ const ParticipantInput: React.FC<ParticipantInputProps> = ({
     return newErrors.length === 0;
   }, []);
 
+  const [textareaValue, setTextareaValue] = useState('');
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
+    setTextareaValue(value);
     
     // Parse participants from textarea (one per line)
     const participantList = value
@@ -65,6 +68,8 @@ const ParticipantInput: React.FC<ParticipantInputProps> = ({
 
   const handleRemoveParticipant = (index: number) => {
     const newParticipants = participants.filter((_, i) => i !== index);
+    const newTextareaValue = newParticipants.join('\n');
+    setTextareaValue(newTextareaValue);
     validateParticipants(newParticipants);
     onParticipantsChange(newParticipants);
   };
@@ -77,7 +82,7 @@ const ParticipantInput: React.FC<ParticipantInputProps> = ({
         </label>
         <textarea
           id="participants"
-          value={participants.join('\n')}
+          value={textareaValue}
           onChange={handleInputChange}
           placeholder="Enter participant names (one per line)&#10;John Smith&#10;Jane Doe&#10;Mike Johnson"
           className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
