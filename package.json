@@ -12,7 +12,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "db:migrate": "node database/migrate.js --migrate",
+    "db:seed": "node database/migrate.js --seed",
+    "db:reset": "node database/migrate.js --reset --migrate --seed",
+    "db:status": "node database/migrate.js --status"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",

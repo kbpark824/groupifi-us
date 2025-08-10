@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import ParticipantInput from './components/groups/ParticipantInput';
 import GroupSizeSelector, { type GroupSizeMode } from './components/groups/GroupSizeSelector';
 import GroupResults from './components/groups/GroupResults';
 import Toast from './components/ui/Toast';
 import { GroupGenerator } from './lib/GroupGenerator';
+import { AuthPage } from './pages/AuthPage';
+import { AuthCallback } from './pages/AuthCallback';
+import { Dashboard } from './pages/Dashboard';
+import { ProfilePage } from './pages/ProfilePage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 interface Group {
   id: string;
@@ -13,7 +19,8 @@ interface Group {
   size: number;
 }
 
-function App() {
+// Home page component
+const HomePage: React.FC = () => {
   const [participants, setParticipants] = useState<string[]>([]);
   const [groupMode, setGroupMode] = useState<GroupSizeMode>('fixed-size');
   const [fixedSize, setFixedSize] = useState(3);
@@ -75,7 +82,7 @@ function App() {
   const canGenerate = participants.length >= 2 && isValidConfiguration;
 
   return (
-    <Layout>
+    <>
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -148,6 +155,34 @@ function App() {
           onClose={clearMessages}
         />
       )}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
     </Layout>
   );
 }

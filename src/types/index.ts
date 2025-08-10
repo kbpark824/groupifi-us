@@ -1,4 +1,8 @@
-export interface User {
+// Re-export Supabase auth types for convenience
+export type { User, Session, AuthError } from '@supabase/supabase-js'
+
+// Legacy User interface (kept for backward compatibility)
+export interface UserProfile {
   id: string
   email: string
   created_at: string
