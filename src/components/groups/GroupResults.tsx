@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-
-interface Group {
-  id: string;
-  name: string;
-  members: string[];
-  size: number;
-}
+import type { Group } from '../../types';
 
 interface GroupResultsProps {
   groups: Group[];

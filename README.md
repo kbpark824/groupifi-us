@@ -1,69 +1,96 @@
-# React + TypeScript + Vite
+# Groupifi Us
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Groupifi Us is a web-based application that automates the process of organizing large groups of people into smaller groups intelligently. The system addresses the common problem faced by coordinators of recurring group-based activities who waste time manually forming groups, re-drawing when rules are violated, and trying to remember past combinations.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Anonymous Group Generation** - Quick one-time group creation without signup
+- **User Authentication** - Email/password and Google OAuth support
+- **Saved Group Lists** - Manage reusable participant lists
+- **Smart Constraints** - Define rules for who should/shouldn't be grouped together
+- **Historical Avoidance** - Prevent repetitive pairings across sessions
+- **Mobile Responsive** - Works seamlessly on all devices
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend:** React.js 18+ with TypeScript and Tailwind CSS
+- **Backend:** PocketBase for authentication and database
+- **Deployment:** Render with custom domain (groupifi.us)
+- **CI/CD:** GitHub Actions with dual environment setup
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Development
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Prerequisites
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Node.js 18+
+- npm or yarn
+
+### Setup
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd groupifi-us
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Available Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev          # Start development server
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run lint         # Run ESLint
+npm run type-check   # Run TypeScript checks
+npm run format       # Format code with Prettier
 ```
+
+## Deployment
+
+This project uses GitHub Flow with automatic development deployments and manual production deployments.
+
+### Environments
+
+- **Development:** Auto-deploys on push to `main` branch
+- **Production:** Manual deployment via GitHub Actions
+
+### GitHub Repository Setup
+
+For complete GitHub repository configuration including branch protection, environments, and CI/CD setup, see [GITHUB_SETUP.md](./GITHUB_SETUP.md).
+
+## Project Structure
+
+```
+src/
+├── components/           # Reusable UI components
+│   ├── auth/            # Authentication components
+│   ├── groups/          # Group management components
+│   ├── layout/          # Layout and navigation
+│   └── ui/              # Generic UI components
+├── hooks/               # Custom React hooks
+├── lib/                 # Utilities and configurations
+├── pages/               # Page components
+├── types/               # TypeScript definitions
+└── contexts/            # React Context providers
+```
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes
+3. Ensure tests pass: `npm run test`
+4. Ensure code quality: `npm run lint && npm run type-check`
+5. Create a pull request
+
+All pull requests require approval and passing status checks before merging.
+
+## License
+
+This project is private and proprietary.

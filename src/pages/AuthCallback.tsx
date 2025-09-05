@@ -1,27 +1,45 @@
 import React, { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { authHelpers } from '../lib/auth'
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession()
+        // Get OAuth callback parameters
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
         
-        if (error) {
-          console.error('Auth callback error:', error)
-          navigate('/auth?error=callback_failed')
-          return
-        }
+        if (code && state) {
+          // Handle OAuth callback
+          const { data, error } = await authHelpers.handleOAuthCallback(code, state)
+          
+          if (error) {
+            console.error('OAuth callback error:', error)
+            navigate('/auth?error=oauth_failed')
+            return
+          }
 
-        if (data.session) {
-          // Successfully authenticated, redirect to dashboard or home
-          navigate('/')
+          if (data) {
+            // Check for stored redirect URL
+            const redirectUrl = localStorage.getItem('oauth_redirect')
+            localStorage.removeItem('oauth_redirect')
+            
+            // Successfully authenticated, redirect to intended page or dashboard
+            navigate(redirectUrl || '/')
+          } else {
+            navigate('/auth?error=no_session')
+          }
         } else {
-          // No session found, redirect to auth page
-          navigate('/auth')
+          // Check if user is already authenticated
+          if (authHelpers.isAuthenticated()) {
+            navigate('/')
+          } else {
+            navigate('/auth')
+          }
         }
       } catch (error) {
         console.error('Unexpected error in auth callback:', error)
@@ -30,7 +48,7 @@ export const AuthCallback: React.FC = () => {
     }
 
     handleAuthCallback()
-  }, [navigate])
+  }, [navigate, searchParams])
 
   return (
     <div className="flex items-center justify-center min-h-screen">

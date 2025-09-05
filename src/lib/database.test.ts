@@ -2,43 +2,40 @@
  * Database operations tests
  * 
  * These tests verify that the database utility functions work correctly.
- * Note: These are integration tests that require a working Supabase connection.
+ * Note: These are integration tests that require a working PocketBase connection.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { savedGroupsDb, constraintsDb, groupingSessionsDb, dbUtils } from './database'
 
-// Mock Supabase client with proper method chaining
-vi.mock('./supabase', () => {
-  const createChainableMock = (isCreateOperation = false) => ({
-    select: vi.fn(() => createChainableMock(isCreateOperation)),
-    eq: vi.fn(() => createChainableMock()),
-    order: vi.fn(() => createChainableMock()),
-    limit: vi.fn(() => createChainableMock()),
-    single: vi.fn(() => ({ 
-      data: isCreateOperation ? { id: 'test-id', name: 'Test Item' } : null, 
-      error: isCreateOperation ? null : { code: 'PGRST116' } 
-    })),
-    insert: vi.fn(() => createChainableMock(true)),
-    update: vi.fn(() => createChainableMock(true)),
-    delete: vi.fn(() => createChainableMock()),
-    range: vi.fn(() => createChainableMock()),
-    in: vi.fn(() => createChainableMock()),
-    data: [],
-    error: null
-  })
-
-  return {
-    supabase: {
-      from: vi.fn(() => createChainableMock()),
-      auth: {
-        getUser: vi.fn(() => ({
-          data: { user: { id: 'test-user-id' } }
-        }))
-      }
-    }
+// Mock PocketBase client
+vi.mock('./pocketbase', () => ({
+  pb: {
+    collection: vi.fn(() => ({
+      getFullList: vi.fn(() => Promise.resolve([])),
+      getList: vi.fn(() => Promise.resolve({ items: [] })),
+      getOne: vi.fn((id: string) => {
+        if (id === 'non-existent-id') {
+          const error = new Error('Not found')
+          ;(error as any).status = 404
+          return Promise.reject(error)
+        }
+        return Promise.resolve({ id: 'test-id', name: 'Test Item' })
+      }),
+      create: vi.fn(() => Promise.resolve({ id: 'test-id', name: 'Test Item' })),
+      update: vi.fn(() => Promise.resolve({ id: 'test-id', name: 'Updated Item' })),
+      delete: vi.fn(() => Promise.resolve()),
+    }))
   }
-})
+}))
+
+// Mock auth helpers
+vi.mock('./auth', () => ({
+  authHelpers: {
+    getUserId: vi.fn(() => 'test-user-id'),
+    isAuthenticated: vi.fn(() => true)
+  }
+}))
 
 describe('Database Operations', () => {
   beforeEach(() => {

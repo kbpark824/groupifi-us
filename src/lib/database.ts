@@ -7,20 +7,30 @@
  * - GroupingSessions
  */
 
-import { supabase } from './supabase'
-import type { Database } from '../types/database'
+import { pb } from './pocketbase'
+import { authHelpers } from './auth'
+import type { RecordModel } from 'pocketbase'
 
-// Type aliases for better readability
-type SavedGroup = Database['public']['Tables']['saved_groups']['Row']
-type SavedGroupInsert = Database['public']['Tables']['saved_groups']['Insert']
-type SavedGroupUpdate = Database['public']['Tables']['saved_groups']['Update']
+// Type definitions for PocketBase collections
+export interface SavedGroup extends RecordModel {
+  user_id: string
+  name: string
+  participants: string[]
+}
 
-type Constraint = Database['public']['Tables']['constraints']['Row']
-type ConstraintInsert = Database['public']['Tables']['constraints']['Insert']
-type ConstraintUpdate = Database['public']['Tables']['constraints']['Update']
+export interface Constraint extends RecordModel {
+  group_id: string
+  person_a: string
+  person_b: string
+  constraint_type: ConstraintType
+}
 
-type GroupingSession = Database['public']['Tables']['grouping_sessions']['Row']
-type GroupingSessionInsert = Database['public']['Tables']['grouping_sessions']['Insert']
+export interface GroupingSession extends RecordModel {
+  group_id: string
+  session_date: string
+  groups_data: any[]
+  participants_count: number
+}
 
 // Constraint types for better type safety
 export type ConstraintType = 'hard_together' | 'hard_apart' | 'soft_together' | 'soft_apart'
@@ -33,74 +43,78 @@ export const savedGroupsDb = {
    * Get all saved groups for the current user
    */
   async getAll(): Promise<SavedGroup[]> {
-    const { data, error } = await supabase
-      .from('saved_groups')
-      .select('*')
-      .order('updated_at', { ascending: false })
+    try {
+      const userId = authHelpers.getUserId()
+      if (!userId) throw new Error('User not authenticated')
 
-    if (error) throw error
-    return data || []
+      const records = await pb.collection('saved_groups').getFullList({
+        filter: `user_id = "${userId}"`,
+        sort: '-updated'
+      })
+
+      return records as SavedGroup[]
+    } catch (error) {
+      console.error('Error fetching saved groups:', error)
+      throw error
+    }
   },
 
   /**
    * Get a specific saved group by ID
    */
   async getById(id: string): Promise<SavedGroup | null> {
-    const { data, error } = await supabase
-      .from('saved_groups')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') return null // Not found
+    try {
+      const record = await pb.collection('saved_groups').getOne(id)
+      return record as SavedGroup
+    } catch (error: any) {
+      if (error.status === 404) return null
       throw error
     }
-    return data
   },
 
   /**
    * Create a new saved group
    */
-  async create(group: Omit<SavedGroupInsert, 'user_id'>): Promise<SavedGroup> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+  async create(group: Omit<SavedGroup, 'id' | 'created' | 'updated' | 'user_id'>): Promise<SavedGroup> {
+    try {
+      const userId = authHelpers.getUserId()
+      if (!userId) throw new Error('User not authenticated')
 
-    const { data, error } = await supabase
-      .from('saved_groups')
-      .insert({ ...group, user_id: user.id })
-      .select()
-      .single()
+      const record = await pb.collection('saved_groups').create({
+        ...group,
+        user_id: userId
+      })
 
-    if (error) throw error
-    return data
+      return record as SavedGroup
+    } catch (error) {
+      console.error('Error creating saved group:', error)
+      throw error
+    }
   },
 
   /**
    * Update an existing saved group
    */
-  async update(id: string, updates: SavedGroupUpdate): Promise<SavedGroup> {
-    const { data, error } = await supabase
-      .from('saved_groups')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
+  async update(id: string, updates: Partial<SavedGroup>): Promise<SavedGroup> {
+    try {
+      const record = await pb.collection('saved_groups').update(id, updates)
+      return record as SavedGroup
+    } catch (error) {
+      console.error('Error updating saved group:', error)
+      throw error
+    }
   },
 
   /**
    * Delete a saved group (cascades to constraints and sessions)
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('saved_groups')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
+    try {
+      await pb.collection('saved_groups').delete(id)
+    } catch (error) {
+      console.error('Error deleting saved group:', error)
+      throw error
+    }
   }
 }
 
@@ -112,67 +126,70 @@ export const constraintsDb = {
    * Get all constraints for a specific group
    */
   async getByGroupId(groupId: string): Promise<Constraint[]> {
-    const { data, error } = await supabase
-      .from('constraints')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: true })
+    try {
+      const records = await pb.collection('constraints').getFullList({
+        filter: `group_id = "${groupId}"`,
+        sort: 'created'
+      })
 
-    if (error) throw error
-    return data || []
+      return records as Constraint[]
+    } catch (error) {
+      console.error('Error fetching constraints:', error)
+      throw error
+    }
   },
 
   /**
    * Create a new constraint
    */
-  async create(constraint: ConstraintInsert): Promise<Constraint> {
-    const { data, error } = await supabase
-      .from('constraints')
-      .insert(constraint)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
+  async create(constraint: Omit<Constraint, 'id' | 'created' | 'updated'>): Promise<Constraint> {
+    try {
+      const record = await pb.collection('constraints').create(constraint)
+      return record as Constraint
+    } catch (error) {
+      console.error('Error creating constraint:', error)
+      throw error
+    }
   },
 
   /**
    * Update an existing constraint
    */
-  async update(id: string, updates: ConstraintUpdate): Promise<Constraint> {
-    const { data, error } = await supabase
-      .from('constraints')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
+  async update(id: string, updates: Partial<Constraint>): Promise<Constraint> {
+    try {
+      const record = await pb.collection('constraints').update(id, updates)
+      return record as Constraint
+    } catch (error) {
+      console.error('Error updating constraint:', error)
+      throw error
+    }
   },
 
   /**
    * Delete a constraint
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('constraints')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
+    try {
+      await pb.collection('constraints').delete(id)
+    } catch (error) {
+      console.error('Error deleting constraint:', error)
+      throw error
+    }
   },
 
   /**
    * Delete all constraints for a group
    */
   async deleteByGroupId(groupId: string): Promise<void> {
-    const { error } = await supabase
-      .from('constraints')
-      .delete()
-      .eq('group_id', groupId)
-
-    if (error) throw error
+    try {
+      const constraints = await this.getByGroupId(groupId)
+      for (const constraint of constraints) {
+        await pb.collection('constraints').delete(constraint.id)
+      }
+    } catch (error) {
+      console.error('Error deleting constraints by group ID:', error)
+      throw error
+    }
   }
 }
 
@@ -184,72 +201,85 @@ export const groupingSessionsDb = {
    * Get all sessions for a specific group
    */
   async getByGroupId(groupId: string, limit = 10): Promise<GroupingSession[]> {
-    const { data, error } = await supabase
-      .from('grouping_sessions')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('session_date', { ascending: false })
-      .limit(limit)
+    try {
+      const records = await pb.collection('grouping_sessions').getList(1, limit, {
+        filter: `group_id = "${groupId}"`,
+        sort: '-session_date'
+      })
 
-    if (error) throw error
-    return data || []
+      return records.items as GroupingSession[]
+    } catch (error) {
+      console.error('Error fetching grouping sessions:', error)
+      throw error
+    }
   },
 
   /**
    * Get the most recent session for a group
    */
   async getLatestByGroupId(groupId: string): Promise<GroupingSession | null> {
-    const { data, error } = await supabase
-      .from('grouping_sessions')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('session_date', { ascending: false })
-      .limit(1)
-      .single()
+    try {
+      const records = await pb.collection('grouping_sessions').getList(1, 1, {
+        filter: `group_id = "${groupId}"`,
+        sort: '-session_date'
+      })
 
-    if (error) {
-      if (error.code === 'PGRST116') return null // Not found
+      return records.items.length > 0 ? records.items[0] as GroupingSession : null
+    } catch (error: any) {
+      if (error.status === 404) return null
+      console.error('Error fetching latest grouping session:', error)
       throw error
     }
-    return data
   },
 
   /**
-   * Create a new grouping session
+   * Create a new grouping session from group generation result
    */
-  async create(session: GroupingSessionInsert): Promise<GroupingSession> {
-    const { data, error } = await supabase
-      .from('grouping_sessions')
-      .insert(session)
-      .select()
-      .single()
+  async create(session: Omit<GroupingSession, 'id' | 'created' | 'updated'>): Promise<GroupingSession> {
+    try {
+      const record = await pb.collection('grouping_sessions').create(session)
+      return record as GroupingSession
+    } catch (error) {
+      console.error('Error creating grouping session:', error)
+      throw error
+    }
+  },
 
-    if (error) throw error
-    return data
+  /**
+   * Save a group generation result as a new session
+   */
+  async saveGenerationResult(groupId: string, result: import('../types').GroupGenerationResult): Promise<GroupingSession> {
+    const sessionData = {
+      group_id: groupId,
+      groups_data: result.groups, // Store the full Group objects
+      participants_count: result.metadata.totalParticipants,
+      session_date: new Date().toISOString()
+    }
+
+    return this.create(sessionData)
   },
 
   /**
    * Delete old sessions (keep only the most recent N sessions)
    */
   async cleanupOldSessions(groupId: string, keepCount = 10): Promise<void> {
-    // Get sessions to delete (all except the most recent keepCount)
-    const { data: sessionsToDelete, error: selectError } = await supabase
-      .from('grouping_sessions')
-      .select('id')
-      .eq('group_id', groupId)
-      .order('session_date', { ascending: false })
-      .range(keepCount, 1000) // Skip first keepCount, get the rest
+    try {
+      // Get all sessions for the group
+      const allSessions = await pb.collection('grouping_sessions').getFullList({
+        filter: `group_id = "${groupId}"`,
+        sort: '-session_date'
+      })
 
-    if (selectError) throw selectError
-
-    if (sessionsToDelete && sessionsToDelete.length > 0) {
-      const idsToDelete = sessionsToDelete.map(session => session.id)
-      const { error: deleteError } = await supabase
-        .from('grouping_sessions')
-        .delete()
-        .in('id', idsToDelete)
-
-      if (deleteError) throw deleteError
+      // Delete sessions beyond the keep count
+      if (allSessions.length > keepCount) {
+        const sessionsToDelete = allSessions.slice(keepCount)
+        for (const session of sessionsToDelete) {
+          await pb.collection('grouping_sessions').delete(session.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up old sessions:', error)
+      throw error
     }
   }
 }
@@ -262,18 +292,15 @@ export const dbUtils = {
    * Check if the current user owns a specific group
    */
   async userOwnsGroup(groupId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return false
+    try {
+      const userId = authHelpers.getUserId()
+      if (!userId) return false
 
-    const { data, error } = await supabase
-      .from('saved_groups')
-      .select('id')
-      .eq('id', groupId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (error) return false
-    return !!data
+      const record = await pb.collection('saved_groups').getOne(groupId)
+      return record.user_id === userId
+    } catch {
+      return false
+    }
   },
 
   /**
@@ -281,26 +308,10 @@ export const dbUtils = {
    */
   async checkConnection(): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('saved_groups')
-        .select('id')
-        .limit(1)
-
-      return !error
+      await pb.collection('saved_groups').getList(1, 1)
+      return true
     } catch {
       return false
     }
   }
-}
-
-// Export types for use in other modules
-export type {
-  SavedGroup,
-  SavedGroupInsert,
-  SavedGroupUpdate,
-  Constraint,
-  ConstraintInsert,
-  ConstraintUpdate,
-  GroupingSession,
-  GroupingSessionInsert
 }

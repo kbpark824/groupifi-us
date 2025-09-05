@@ -1,0 +1,8 @@
+# Global code owners
+* @owner
+
+# Specific areas
+/.github/ @owner
+/src/lib/ @owner
+/database/ @owner
+*.md @owner

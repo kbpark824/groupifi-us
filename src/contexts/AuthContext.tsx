@@ -1,15 +1,16 @@
 import React, { createContext, useEffect, useState } from 'react'
-import type { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { pb } from '../lib/pocketbase'
+import { authHelpers, type User } from '../lib/auth'
 
 interface AuthContextType {
   user: User | null
-  session: Session | null
   loading: boolean
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>
-  signOut: () => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string, passwordConfirm: string, name?: string) => Promise<{ error: any }>
+  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signInWithGoogle: () => Promise<{ error: any }>
+  signOut: () => Promise<{ error: any }>
+  updateProfile: (data: Partial<User>) => Promise<{ error: any }>
+  refresh: () => Promise<{ error: any }>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,76 +21,68 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
+    // Get initial auth state
+    const initializeAuth = () => {
+      const currentUser = authHelpers.getCurrentUser()
+      setUser(currentUser)
       setLoading(false)
     }
 
-    getInitialSession()
+    initializeAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        setLoading(false)
-      }
-    )
+    const unsubscribe = pb.authStore.onChange((_token, model) => {
+      setUser(model as User | null)
+      setLoading(false)
+    })
 
-    return () => subscription.unsubscribe()
+    return unsubscribe
   }, [])
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, passwordConfirm: string, name?: string) => {
     console.log('🔄 Attempting signup for:', email)
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
+    const { data, error } = await authHelpers.signUp(email, password, passwordConfirm, name)
     console.log('📧 Signup response:', { data, error })
     return { error }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await authHelpers.signIn(email, password)
     return { error }
   }
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
+    const { error } = await authHelpers.signInWithGoogle(`${window.location.origin}/auth/callback`)
     return { error }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await authHelpers.signOut()
+    return { error }
+  }
+
+  const updateProfile = async (data: Partial<User>) => {
+    const { error } = await authHelpers.updateProfile(data)
+    return { error }
+  }
+
+  const refresh = async () => {
+    const { error } = await authHelpers.refresh()
     return { error }
   }
 
   const value: AuthContextType = {
     user,
-    session,
     loading,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
+    updateProfile,
+    refresh,
   }
 
   return (

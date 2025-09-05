@@ -1,9 +1,48 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import GroupList from '../components/groups/GroupList'
+import GroupCreator from '../components/groups/GroupCreator'
+import GroupEditor from '../components/groups/GroupEditor'
+import Modal from '../components/ui/Modal'
+import { type SavedGroup } from '../lib/database'
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<SavedGroup | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const handleCreateGroup = () => {
+    setShowCreateModal(true)
+  }
+
+  const handleEditGroup = (group: SavedGroup) => {
+    setEditingGroup(group)
+    setShowEditModal(true)
+  }
+
+  const handleGroupCreated = () => {
+    setShowCreateModal(false)
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleGroupUpdated = () => {
+    setShowEditModal(false)
+    setEditingGroup(null)
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleGroupDeleted = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleCloseModals = () => {
+    setShowCreateModal(false)
+    setShowEditModal(false)
+    setEditingGroup(null)
+  }
 
   if (!user) {
     return (
@@ -90,10 +129,10 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4">
             <button 
-              disabled
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
+              onClick={handleCreateGroup}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-600 bg-green-100 hover:bg-green-200"
             >
-              Coming Soon
+              Create Group
             </button>
           </div>
         </div>
@@ -113,37 +152,22 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <button 
-              disabled
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
-            >
-              Coming Soon
-            </button>
+            <p className="text-sm text-green-600 font-medium">
+              ✓ Available in saved groups
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Click "History" on any saved group to view past sessions
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h2>
-        <div className="text-center py-8">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Start creating groups to see your activity here.
-          </p>
-          <div className="mt-6">
-            <Link 
-              to="/" 
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Create Your First Group
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* Saved Groups List */}
+      <GroupList 
+        onEditGroup={handleEditGroup}
+        onDeleteGroup={handleGroupDeleted}
+        refreshTrigger={refreshTrigger}
+      />
 
       {/* Account Summary */}
       <div className="bg-white shadow rounded-lg p-6">
@@ -168,6 +192,25 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Group Modal */}
+      <Modal isOpen={showCreateModal} onClose={handleCloseModals}>
+        <GroupCreator 
+          onGroupCreated={handleGroupCreated}
+          onCancel={handleCloseModals}
+          isModal={true}
+        />
+      </Modal>
+
+      {/* Edit Group Modal */}
+      <Modal isOpen={showEditModal} onClose={handleCloseModals}>
+        <GroupEditor 
+          group={editingGroup}
+          onGroupUpdated={handleGroupUpdated}
+          onCancel={handleCloseModals}
+          isModal={true}
+        />
+      </Modal>
     </div>
   )
 }

@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "pocketbase": "./bin/pocketbase serve --http=127.0.0.1:8090",
     "build": "tsc -b && vite build",
+    "build:dev": "cp .env.development .env.local && npm run build",
+    "build:prod": "cp .env.production .env.local && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
@@ -13,14 +16,17 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
+    "deploy:dev": "npm run build:dev",
+    "deploy:prod": "npm run build:prod",
     "db:migrate": "node database/migrate.js --migrate",
     "db:seed": "node database/migrate.js --seed",
     "db:reset": "node database/migrate.js --reset --migrate --seed",
-    "db:status": "node database/migrate.js --status"
+    "db:status": "node database/migrate.js --status",
+    "setup:collections": "node setup-collections-simple.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.54.0",
     "clsx": "^2.1.1",
+    "pocketbase": "^0.26.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.0",

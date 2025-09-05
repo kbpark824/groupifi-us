@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: groupifi-us-dev
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: NODE_ENV
+        value: development
+      - key: VITE_APP_ENV
+        value: development
+      - key: VITE_APP_URL
+        value: https://groupifi-dev.onrender.com
+      - key: VITE_POCKETBASE_URL
+        value: https://groupifi-pb-dev.fly.dev
+    domains:
+      - groupifi-dev.onrender.com
+
+  - type: web
+    name: groupifi-us-prod
+    env: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_APP_ENV
+        value: production
+      - key: VITE_APP_URL
+        value: https://groupifi.us
+      - key: VITE_POCKETBASE_URL
+        value: https://groupifi-pb.fly.dev
+    domains:
+      - groupifi.us

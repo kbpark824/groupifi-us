@@ -6,7 +6,7 @@ interface SignupFormProps {
   onSwitchToLogin?: () => void
 }
 
-export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitchToLogin }) => {
+export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -33,10 +33,28 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitchToLog
       return
     }
 
-    const { error } = await signUp(email, password)
+    const { error } = await signUp(email, password, confirmPassword)
     
     if (error) {
-      setError(error.message)
+      console.error('Signup error:', error)
+      // Show more detailed error information
+      let errorMessage = 'Something went wrong.'
+      if (error.response?.data) {
+        // PocketBase error format
+        const data = error.response.data
+        if (data.message) {
+          errorMessage = data.message
+        } else if (data.data) {
+          // Field-specific errors
+          const fieldErrors = Object.entries(data.data).map(([field, errors]: [string, any]) => {
+            return `${field}: ${errors.message || errors}`
+          }).join(', ')
+          errorMessage = fieldErrors || 'Validation failed'
+        }
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      setError(errorMessage)
     } else {
       setSuccess(true)
       // Don't call onSuccess here - user needs to confirm email first

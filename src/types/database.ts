@@ -41,7 +41,7 @@ export interface Database {
           group_id: string
           person_a: string
           person_b: string
-          constraint_type: string
+          constraint_type: 'hard_together' | 'hard_apart' | 'soft_together' | 'soft_apart'
           created_at: string
         }
         Insert: {
@@ -49,7 +49,7 @@ export interface Database {
           group_id: string
           person_a: string
           person_b: string
-          constraint_type: string
+          constraint_type: 'hard_together' | 'hard_apart' | 'soft_together' | 'soft_apart'
           created_at?: string
         }
         Update: {
@@ -57,7 +57,7 @@ export interface Database {
           group_id?: string
           person_a?: string
           person_b?: string
-          constraint_type?: string
+          constraint_type?: 'hard_together' | 'hard_apart' | 'soft_together' | 'soft_apart'
           created_at?: string
         }
       }

@@ -1,0 +1,213 @@
+[
+  {
+    "id": "saved_groups_collection",
+    "name": "saved_groups",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "name_field",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": 100,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "participants_field",
+        "name": "participants",
+        "type": "json",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "id": "user_id_field",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": 1,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_saved_groups_user_id ON saved_groups (user_id)"
+    ],
+    "listRule": "user_id = @request.auth.id",
+    "viewRule": "user_id = @request.auth.id",
+    "createRule": "user_id = @request.auth.id",
+    "updateRule": "user_id = @request.auth.id",
+    "deleteRule": "user_id = @request.auth.id",
+    "options": {}
+  },
+  {
+    "id": "constraints_collection",
+    "name": "constraints",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "group_id_field",
+        "name": "group_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "saved_groups_collection",
+          "cascadeDelete": true,
+          "minSelect": 1,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      },
+      {
+        "id": "person_a_field",
+        "name": "person_a",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": 100,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "person_b_field",
+        "name": "person_b",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": 100,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "constraint_type_field",
+        "name": "constraint_type",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "hard_together",
+            "hard_apart",
+            "soft_together",
+            "soft_apart"
+          ]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_constraints_group_id ON constraints (group_id)"
+    ],
+    "listRule": "group_id.user_id = @request.auth.id",
+    "viewRule": "group_id.user_id = @request.auth.id",
+    "createRule": "group_id.user_id = @request.auth.id",
+    "updateRule": "group_id.user_id = @request.auth.id",
+    "deleteRule": "group_id.user_id = @request.auth.id",
+    "options": {}
+  },
+  {
+    "id": "grouping_sessions_collection",
+    "name": "grouping_sessions",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "group_id_field",
+        "name": "group_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "saved_groups_collection",
+          "cascadeDelete": true,
+          "minSelect": 1,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      },
+      {
+        "id": "session_date_field",
+        "name": "session_date",
+        "type": "date",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": "",
+          "max": ""
+        }
+      },
+      {
+        "id": "groups_data_field",
+        "name": "groups_data",
+        "type": "json",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "id": "participants_count_field",
+        "name": "participants_count",
+        "type": "number",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": null,
+          "noDecimal": true
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_grouping_sessions_group_id ON grouping_sessions (group_id)",
+      "CREATE INDEX idx_grouping_sessions_date ON grouping_sessions (session_date)"
+    ],
+    "listRule": "group_id.user_id = @request.auth.id",
+    "viewRule": "group_id.user_id = @request.auth.id",
+    "createRule": "group_id.user_id = @request.auth.id",
+    "updateRule": "group_id.user_id = @request.auth.id",
+    "deleteRule": "group_id.user_id = @request.auth.id",
+    "options": {}
+  }
+]

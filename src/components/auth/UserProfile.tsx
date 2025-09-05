@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { supabase } from '../../lib/supabase'
 
 export const UserProfile: React.FC = () => {
-  const { user, signOut } = useAuth()
+  const { user, signOut, updateProfile } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '')
+  const [displayName, setDisplayName] = useState(user?.name || '')
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   const handleSignOut = async () => {
@@ -25,9 +24,7 @@ export const UserProfile: React.FC = () => {
     setUpdateMessage(null)
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { display_name: displayName }
-      })
+      const { error } = await updateProfile({ name: displayName })
 
       if (error) throw error
 
@@ -44,7 +41,7 @@ export const UserProfile: React.FC = () => {
   }
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.user_metadata?.display_name || '')
+    setDisplayName(user?.name || '')
     setIsEditing(false)
     setUpdateMessage(null)
   }
@@ -125,7 +122,7 @@ export const UserProfile: React.FC = () => {
             ) : (
               <div className="mt-1 flex items-center justify-between">
                 <div className="text-sm text-gray-900">
-                  {user.user_metadata?.display_name || 'Not set'}
+                  {user.name || 'Not set'}
                 </div>
                 <button
                   onClick={() => setIsEditing(true)}
@@ -142,7 +139,7 @@ export const UserProfile: React.FC = () => {
               Account Created
             </label>
             <div className="mt-1 text-sm text-gray-900">
-              {new Date(user.created_at).toLocaleDateString('en-US', {
+              {new Date(user.created).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -152,28 +149,23 @@ export const UserProfile: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Last Sign In
+              Email Verified
             </label>
             <div className="mt-1 text-sm text-gray-900">
-              {user.last_sign_in_at 
-                ? new Date(user.last_sign_in_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                : 'Never'
-              }
+              {user.verified ? (
+                <span className="text-green-600">✓ Verified</span>
+              ) : (
+                <span className="text-yellow-600">⚠ Not verified</span>
+              )}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Authentication Provider
+              User ID
             </label>
-            <div className="mt-1 text-sm text-gray-900">
-              {user.app_metadata?.provider === 'google' ? 'Google' : 'Email/Password'}
+            <div className="mt-1 text-sm text-gray-500 font-mono">
+              {user.id}
             </div>
           </div>
         </div>
